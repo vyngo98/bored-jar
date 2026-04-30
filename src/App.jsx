@@ -2,45 +2,40 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import jarImg from "./assets/jar.png";
 import paperImg from "./assets/paper.png";
+import scrollImg from "./assets/scroll.png";
 import "@fontsource/indie-flower";
 
 
 export default function App() {
-  const [ideas, setIdeas] = useState([]);
   const [input, setInput] = useState("");
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [flyingNote, setFlyingNote] = useState(false);
+  const [flyingScroll, setFlyingScroll] = useState(false);
 
-
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("ideas") || "[]");
-    setIdeas(saved);
-  }, []);
+  const [ideas, setIdeas] = useState(() => {
+    return JSON.parse(localStorage.getItem("ideas") || "[]");
+  });
 
   useEffect(() => {
     localStorage.setItem("ideas", JSON.stringify(ideas));
   }, [ideas]);
 
-  // const addIdea = () => {
-  //   if (!input.trim()) return;
-  //   setIdeas([...ideas, input]);
-  //   setInput("");
-  //   setShowModal(false);
-  // };
 
   const addIdea = () => {
     if (!input.trim()) return;
 
-    setFlyingNote(true);
+    // setFlyingNote(true);
+    setFlyingScroll(true);
 
     setTimeout(() => {
       setIdeas([...ideas, input]);
       setInput("");
       setShowModal(false);
-      setFlyingNote(false);
-    }, 600);
+      // setFlyingNote(false);
+      setFlyingScroll(false);
+    }, 700);
   };
+  
 
   const randomPick = () => {
     if (ideas.length === 0) return;
@@ -69,19 +64,22 @@ export default function App() {
         />
       </motion.div>
 
+
       <AnimatePresence>
-        {flyingNote && (
-          <motion.div
-            initial={{ x: 0, y: 0, scale: 1 }}
+        {flyingScroll && (
+          <motion.img
+            src={scrollImg}
+            className="absolute w-16"
+            
+            initial={{ x: 0, y: 0, scale: 1, rotate: 0 }}
             animate={{ x: 100, y: -200, scale: 0.3, rotate: 180 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className="absolute bg-[#fff8e7] px-4 py-2 rounded shadow"
-          >
-            {input}
-          </motion.div>
+            
+            transition={{ duration: 0.7, ease: "easeInOut" }}
+          />
         )}
       </AnimatePresence>
+
       </div>
 
       {/* Buttons */}
