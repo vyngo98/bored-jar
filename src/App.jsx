@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import jarImg from "./assets/jar.png";
 import paperImg from "./assets/paper.png";
 import scrollImg from "./assets/scroll.png";
+import stickerImg from "./assets/greatjob.png";
 import "@fontsource/indie-flower";
 
 
@@ -11,10 +12,14 @@ export default function App() {
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [flyingScroll, setFlyingScroll] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const [ideas, setIdeas] = useState(() => {
     return JSON.parse(localStorage.getItem("ideas") || "[]");
   });
+
+  const activeIdeas = ideas.filter(i => !i.completed);
+
 
   useEffect(() => {
     localStorage.setItem("ideas", JSON.stringify(ideas));
@@ -29,7 +34,8 @@ export default function App() {
     setTimeout(() => {
       const newIdea = {
         id: Date.now(),
-        text: input
+        text: input,
+        completed: false
       };
 
       setIdeas(prev => [...prev, newIdea]);
@@ -42,20 +48,36 @@ export default function App() {
   
 
   const randomPick = () => {
-    if (ideas.length === 0) return;
+  if (activeIdeas.length === 0) return;
 
-    let random;
-    do {
-      random = ideas[Math.floor(Math.random() * ideas.length)];
-    } while (selectedIdea && random.id === selectedIdea.id && ideas.length > 1);
+  let random;
+  do {
+    random = activeIdeas[Math.floor(Math.random() * activeIdeas.length)];
+  } while (selectedIdea && random.id === selectedIdea.id && activeIdeas.length > 1);
 
-    setSelectedIdea(random);
-  };
+  setSelectedIdea(random);
+};
 
   const deleteIdea = (id) => {
     setIdeas(prev => prev.filter(item => item.id !== id));
     setSelectedIdea(null);
   };
+
+
+  const completeIdea = (id) => {
+  setIdeas(prev =>
+    prev.map(item =>
+      item.id === id ? { ...item, completed: true } : item
+    )
+  );
+
+  // 🔥 update selectedIdea luôn
+  setSelectedIdea(prev =>
+    prev ? { ...prev, completed: true } : prev
+  );
+};
+
+  const completedCount = ideas.filter(i => i.completed).length;
 
 
   return (
@@ -80,15 +102,18 @@ export default function App() {
           />
         </motion.div>
 
+
+        
+
         {/* 🔢 COUNTER */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <motion.div
-            key={ideas.length}
+            key={activeIdeas.length}
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="text-3xl font-bold text-white drop-shadow-lg"
           >
-            {ideas.length}
+            {activeIdeas.length}
           </motion.div>
 
         {/* <AnimatePresence>
@@ -106,6 +131,16 @@ export default function App() {
           )}
         </AnimatePresence> */}
         </div>
+      </div>
+
+      {/* COMPLETED COUNT */}
+      <div className="mt-4 text-center">
+        <button
+          onClick={() => setShowCompleted(true)}
+          className="bg-white px-4 py-2 rounded-xl shadow"
+        >
+          ✅ Completed: {completedCount}
+        </button>
       </div>
 
       {/* Buttons */}
@@ -134,7 +169,7 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 flex items-center justify-center"
           >
-            <div className="relative w-80">
+            <div className="relative w-80 overflow-hidden">
 
               {/* PAPER */}
               <img
@@ -153,7 +188,37 @@ export default function App() {
                   {selectedIdea.text}
                 </p>
 
-                <div className="flex justify-center gap-3">
+
+                {selectedIdea.completed && (
+                  <motion.img
+                    src={stickerImg}
+                    alt="sticker"
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: [0, 1.2, 1], rotate: -15 }}
+                    transition={{ duration: 0.5, ease: "backOut" }}
+                    className="
+                      absolute 
+                      top-4 left-4     /* 👈 góc trên trái */
+                      w-20             /* 👈 nhỏ lại */
+                      drop-shadow-lg 
+                      opacity-90
+                      pointer-events-none
+                    "
+                  />
+                )}
+
+
+                {/* BUTTONS */}
+                <div className="flex justify-center gap-3 flex-wrap">
+
+                  <button
+                    onClick={() => completeIdea(selectedIdea.id)}
+                    disabled={selectedIdea.completed}
+                    className="px-4 py-1 bg-green-200 rounded-lg shadow disabled:opacity-50"
+                  >
+                    Complete
+                  </button>
+
                   <button
                     onClick={() => deleteIdea(selectedIdea.id)}
                     className="px-4 py-1 bg-red-200 rounded-lg shadow"
@@ -167,6 +232,7 @@ export default function App() {
                   >
                     Close
                   </button>
+
                 </div>
 
               </div>
@@ -222,6 +288,42 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Modal list completed ideas */}
+      <AnimatePresence>
+        {showCompleted && (
+          <motion.div
+            className="fixed inset-0 bg-black/30 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="bg-white p-6 rounded-xl w-80 max-h-[70vh] overflow-y-auto">
+              <h2 className="text-lg font-bold mb-3">✅ Completed Ideas</h2>
+
+              {ideas.filter(i => i.completed).length === 0 ? (
+                <p className="text-center text-gray-500">No completed ideas yet</p>
+              ) : (
+                ideas
+                  .filter(i => i.completed)
+                  .map(item => (
+                    <div key={item.id} className="mb-2 p-2 bg-gray-100 rounded">
+                      {item.text}
+                    </div>
+                  ))
+              )}
+
+              <button
+                onClick={() => setShowCompleted(false)}
+                className="mt-4 w-full bg-gray-200 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
